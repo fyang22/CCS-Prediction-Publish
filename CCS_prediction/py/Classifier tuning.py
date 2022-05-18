@@ -12,16 +12,23 @@ import pandas as pd
 
 
 # load data
-df_class = pd.read_csv(r'C:\Users\fyang\CCS-Prediction-paper\Data\classifier_model_data.csv')
+df_class = pd.read_csv(r'C:\Users\fyang\CCS-Prediction-Publish\Data\classifier_model_data.csv')
 
 
-# In[5]:
+# In[3]:
+
+
+ind_FP0 = df_class.columns.get_loc("Bit_0")
+ind_FP0
+
+
+# In[4]:
 
 
 # Random forest classifier modeling
 from sklearn.model_selection import train_test_split
 
-X_SC = df_class.iloc[:,12:]
+X_SC = df_class.iloc[:,ind_FP0:]
 y_SC = df_class['Super.Class'].values
 
 X_SC_train, X_SC_test, y_SC_train, y_SC_test = train_test_split(X_SC, y_SC, 
@@ -36,7 +43,7 @@ print('X_SC_test: {}'.format(np.shape(X_SC_test)))
 print('y_SC_test: {}'.format(np.shape(y_SC_test)))
 
 
-# In[6]:
+# In[5]:
 
 
 # check training data
@@ -44,7 +51,7 @@ unique, counts = np.unique(y_SC_train, return_counts=True)
 print (np.asarray((unique, counts)).T)
 
 
-# In[7]:
+# In[6]:
 
 
 # check test data
@@ -52,7 +59,7 @@ unique_test, counts_test = np.unique(y_SC_test, return_counts=True)
 print (np.asarray((unique_test, counts_test)).T)
 
 
-# In[8]:
+# In[7]:
 
 
 from sklearn.model_selection import train_test_split
@@ -61,7 +68,7 @@ from sklearn import metrics
 from sklearn.model_selection import GridSearchCV
 
 
-# In[9]:
+# In[8]:
 
 
 # set parameters for tuning
@@ -82,7 +89,7 @@ min_samples_leaf = [int(x) for x in np.linspace(start = 5, stop = 15, num =5)]
 oob_score = [True]
 
 
-# In[10]:
+# In[9]:
 
 
 # Creat the param grid
@@ -98,7 +105,7 @@ param_grid = {'n_estimators': n_estimators,
 rfc_Model = RandomForestClassifier(oob_score = [True])
 
 
-# In[11]:
+# In[10]:
 
 
 rfc_Grid = GridSearchCV(estimator = rfc_Model, 
@@ -113,7 +120,7 @@ rfc_Grid = GridSearchCV(estimator = rfc_Model,
 rfc_Grid.fit(X_SC_train, y_SC_train)
 
 
-# In[12]:
+# In[11]:
 
 
 # Optimized method 
@@ -122,7 +129,7 @@ print (f'Train Accuracy - : {rfc_Grid.score(X_SC_train,y_SC_train):.3f}')
 print (f'Test Accuracy - : {rfc_Grid.score(X_SC_test,y_SC_test):.3f}')
 
 
-# In[13]:
+# In[12]:
 
 
 labels = ['Organic acids and derivatives', 
@@ -132,7 +139,7 @@ labels = ['Organic acids and derivatives',
                         'Organoheterocyclic compounds']
 
 
-# In[14]:
+# In[13]:
 
 
 # F1 Scores
@@ -146,7 +153,7 @@ f1_score = f1_score(y_SC_test, pred, average= None,
 f1_score
 
 
-# In[17]:
+# In[14]:
 
 
 import matplotlib.pyplot as plt
@@ -192,13 +199,13 @@ def plot_search_results(grid):
     plt.show()
 
 
-# In[18]:
+# In[15]:
 
 
 plot_search_results(rfc_Grid)
 
 
-# In[19]:
+# In[16]:
 
 
 #Evaluation confusion matrix
@@ -207,7 +214,7 @@ matrix = confusion_matrix(y_SC_test, pred)
 matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
 
 
-# In[20]:
+# In[17]:
 
 
 import matplotlib.pyplot as plt
@@ -232,7 +239,7 @@ plt.savefig('Confusion Matrix.png',bbox_inches='tight')
 plt.show()
 
 
-# In[136]:
+# In[18]:
 
 
 # get index of test datasets
@@ -242,7 +249,7 @@ l_SCtest_smiles = df_class['SMILES'].loc[l_SCtest_index]
 l_SCtest_names = df_class['name'].loc[l_SCtest_index]
 
 
-# In[137]:
+# In[19]:
 
 
 # Check wrongly predicted chemicals
@@ -250,7 +257,7 @@ dict = {'name':l_SCtest_names, 'SMILES':l_SCtest_smiles, 'SuperClass':y_SC_test,
 df_evalu = pd.DataFrame(dict)
 
 
-# In[138]:
+# In[20]:
 
 
 # Compare predicted to defined class
@@ -258,21 +265,29 @@ df_evalu['comparison_column'] = np.where(df_evalu["SuperClass"] == df_evalu["Pre
                                            True, False)
 
 
-# In[139]:
+# In[21]:
 
 
 df_evalu.drop(df_evalu[df_evalu['comparison_column'] == True].index, 
               inplace = True)
 
 
-# In[140]:
+# In[22]:
 
 
 # randomly choose 3 confusion predicted chemicals from each class
 wrongPred = df_evalu.groupby('SuperClass').apply(pd.DataFrame.sample, n = 3)
 
 
-# In[165]:
+# In[23]:
+
+
+# get molecules
+from rdkit import Chem
+df_class['Molecule'] = df_class['SMILES'].apply(Chem.MolFromSmiles)
+
+
+# In[24]:
 
 
 # get index of random choose chemicals
@@ -282,7 +297,7 @@ for i in l_wrongPred_index:
     display(df_class['Molecule'][i])
 
 
-# In[23]:
+# In[25]:
 
 
 # Feature importance
@@ -290,7 +305,7 @@ opt_model = rfc_Grid.best_estimator_ # best optimized model
 model_FI = opt_model.feature_importances_
 
 
-# In[49]:
+# In[26]:
 
 
 # investigate the top 10 importance features
@@ -299,14 +314,10 @@ print(ind)
 print(model_FI[ind])
 
 
-# In[59]:
+# In[27]:
 
 
 from rdkit.Chem import Draw
-from rdkit import Chem
-
-# get molecules from smiles
-df_class['Molecule'] = [Chem.MolFromSmiles (x) for x in df_class.SMILES]
 
 # get bits which have top10 highest importance features
 FPs_columns = [f'Bit_{i}' for i in ind]
@@ -315,7 +326,7 @@ FPs_columns = [f'Bit_{i}' for i in ind]
 listOf_df_FI = [df_class.loc[df_class[column] == 1] for column in FPs_columns]
 
 
-# In[109]:
+# In[28]:
 
 
 # get feature examples
@@ -329,7 +340,7 @@ def get_svgs(df,FI_index):
         return(svg)
 
 
-# In[111]:
+# In[29]:
 
 
 # display features
@@ -337,15 +348,21 @@ from IPython.core.display import display
 df_FI = listOf_df_FI[0]
 df_sampleFI = df_FI.sample(n = 1)    
 svg = get_svgs(df_sampleFI, ind[0])
-print(ind[i])
+print(ind[0])
 display(svg)
 
 
-# In[52]:
+# In[30]:
 
 
 # save the model
 import joblib
-filename = 'classifier_prediction.sav'
+filename = 'classifier_prediction.joblib'
 joblib.dump(rfc_Grid, filename)
+
+
+# In[ ]:
+
+
+
 
